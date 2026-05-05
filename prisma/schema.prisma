@@ -1,0 +1,332 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model OtpCode {
+  id        Int      @id @default(autoincrement())
+  phone     String
+  code      String
+  expiresAt DateTime
+  attempts  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([phone])
+}
+
+model User {
+  id               Int          @id @default(autoincrement())
+  name             String
+  phone            String       @unique
+  password         String
+  role             Role         @default(EMPLOYEE)
+  pushToken        String?
+  createdAt        DateTime     @default(now())
+  products         Product[]
+  animals          Animal[]
+  healthRecords    HealthRecord[]
+  weightLogs       WeightLog[]
+  expenses         Expense[]
+  assignedTasks    Task[]       @relation("AssignedTasks")
+  createdTasks     Task[]       @relation("CreatedTasks")
+  attendance       Attendance[] @relation("AttendanceUser")
+  markedAttendance Attendance[] @relation("AttendanceMarker")
+}
+
+enum Role {
+  OWNER
+  MANAGER
+  EMPLOYEE
+}
+
+model Category {
+  id            Int        @id @default(autoincrement())
+  name          String
+  nameTelugu    String?
+  emoji         String     @default("📦")
+  description   String?
+  isActive      Boolean    @default(true)
+  sortOrder     Int        @default(0)
+  createdAt     DateTime   @default(now())
+  parentId      Int?
+  parent        Category?  @relation("SubCategories", fields: [parentId], references: [id])
+  subcategories Category[] @relation("SubCategories")
+  products      Product[]
+}
+
+model Product {
+  id          Int          @id @default(autoincrement())
+  name        String
+  nameTelugu  String?
+  category    Category     @relation(fields: [categoryId], references: [id])
+  categoryId  Int
+  unit        String
+  price       Float
+  stock       Float        @default(0)
+  minStock    Float        @default(0)
+  description String?
+  descTelugu  String?
+  photoUrl    String?
+  isAvailable Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  addedBy     User         @relation(fields: [userId], references: [id])
+  userId      Int
+  stockLogs   ProductLog[]
+  orders      Order[]
+}
+
+model ProductLog {
+  id        Int      @id @default(autoincrement())
+  product   Product  @relation(fields: [productId], references: [id])
+  productId Int
+  action    String
+  quantity  Float
+  note      String?
+  createdAt DateTime @default(now())
+}
+
+model Customer {
+  id        Int      @id @default(autoincrement())
+  name      String
+  phone     String   @unique
+  address   String?
+  pushToken String?
+  createdAt DateTime @default(now())
+  orders    Order[]
+}
+
+model Order {
+  id         Int         @id @default(autoincrement())
+  customer   Customer    @relation(fields: [customerId], references: [id])
+  customerId Int
+  product    Product     @relation(fields: [productId], references: [id])
+  productId  Int
+  quantity   Float       @default(1)
+  status     OrderStatus @default(PENDING)
+  totalPrice Float
+  paidAmount Float       @default(0)
+  note       String?
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  shipment   Shipment?
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+enum VehicleType {
+  BIKE
+  AUTO
+  VAN
+  CYCLE
+}
+
+enum ShipmentStatus {
+  PREPARING
+  DISPATCHED
+  OUT_FOR_DELIVERY
+  DELIVERED
+  FAILED
+  RETURNED
+}
+
+enum PaymentType {
+  COD
+  PREPAID
+}
+
+model DeliveryPartner {
+  id          Int          @id @default(autoincrement())
+  name        String
+  phone       String       @unique
+  vehicle     VehicleType?
+  areas       String[]
+  isAvailable Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  shipments   Shipment[]
+}
+
+model Shipment {
+  id                Int              @id @default(autoincrement())
+  orderId           Int              @unique
+  order             Order            @relation(fields: [orderId], references: [id])
+  deliveryPartnerId Int?
+  deliveryPartner   DeliveryPartner? @relation(fields: [deliveryPartnerId], references: [id])
+  status            ShipmentStatus   @default(PREPARING)
+  trackingCode      String           @unique
+  deliveryAddress   String
+  deliveryPincode   String?
+  estimatedDelivery DateTime?
+  pickedAt          DateTime?
+  deliveredAt       DateTime?
+  deliveryNotes     String?
+  deliveryPhotoUrl  String?
+  paymentType       PaymentType      @default(COD)
+  codAmount         Float            @default(0)
+  codCollected      Boolean          @default(false)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+}
+
+model Inventory {
+  id          Int            @id @default(autoincrement())
+  name        String
+  category    InvCategory
+  unit        String
+  quantity    Float
+  minQuantity Float
+  costPerUnit Float
+  supplier    String?
+  note        String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  logs        InventoryLog[]
+}
+
+enum InvCategory {
+  FEED
+  MEDICINE
+  EQUIPMENT
+}
+
+model InventoryLog {
+  id          Int       @id @default(autoincrement())
+  inventory   Inventory @relation(fields: [inventoryId], references: [id])
+  inventoryId Int
+  action      String
+  quantity    Float
+  note        String?
+  createdAt   DateTime  @default(now())
+}
+
+enum AnimalType {
+  SHEEP
+  GOAT
+  CHICKEN
+  HEN
+}
+
+enum AnimalStatus {
+  AVAILABLE
+  SOLD
+  DEAD
+}
+
+model Animal {
+  id              Int              @id @default(autoincrement())
+  name            String
+  type            AnimalType
+  breed           String?
+  age             String?
+  weight          Float?
+  price           Float
+  description     String?
+  photoUrl        String?
+  status          AnimalStatus     @default(AVAILABLE)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  addedBy         User             @relation(fields: [userId], references: [id])
+  userId          Int
+  stockLogs       AnimalStockLog[]
+  healthRecords   HealthRecord[]
+  weightLogs      WeightLog[]
+  breedingRecords BreedingRecord[]
+}
+
+model AnimalStockLog {
+  id        Int      @id @default(autoincrement())
+  animal    Animal   @relation(fields: [animalId], references: [id])
+  animalId  Int
+  action    String
+  quantity  Float    @default(1)
+  note      String?
+  createdAt DateTime @default(now())
+}
+
+model HealthRecord {
+  id          Int       @id @default(autoincrement())
+  animalId    Int
+  animal      Animal    @relation(fields: [animalId], references: [id])
+  type        String    // VACCINATION, DEWORMING, VET_VISIT, TREATMENT
+  medicine    String?
+  dose        String?
+  notes       String?
+  date        DateTime  @default(now())
+  nextDueDate DateTime?
+  userId      Int
+  user        User      @relation(fields: [userId], references: [id])
+  createdAt   DateTime  @default(now())
+}
+
+model WeightLog {
+  id       Int      @id @default(autoincrement())
+  animalId Int
+  animal   Animal   @relation(fields: [animalId], references: [id])
+  weight   Float
+  date     DateTime @default(now())
+  notes    String?
+  userId   Int
+  user     User     @relation(fields: [userId], references: [id])
+}
+
+model BreedingRecord {
+  id          Int       @id @default(autoincrement())
+  femaleId    Int
+  female      Animal    @relation(fields: [femaleId], references: [id])
+  maleName    String?
+  matingDate  DateTime
+  expectedDue DateTime?
+  actualDue   DateTime?
+  litterCount Int?
+  status      String    @default("PREGNANT")
+  notes       String?
+  createdAt   DateTime  @default(now())
+}
+
+model Expense {
+  id          Int      @id @default(autoincrement())
+  date        DateTime @default(now())
+  category    String   // FEED, MEDICINE, LABOUR, TRANSPORT, EQUIPMENT, OTHER
+  description String
+  amount      Float
+  paidTo      String?
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id])
+  createdAt   DateTime @default(now())
+}
+
+model Task {
+  id           Int       @id @default(autoincrement())
+  title        String
+  description  String?
+  assignedToId Int
+  assignedTo   User      @relation("AssignedTasks", fields: [assignedToId], references: [id])
+  createdById  Int
+  createdBy    User      @relation("CreatedTasks", fields: [createdById], references: [id])
+  dueDate      DateTime?
+  status       String    @default("PENDING")
+  priority     String    @default("NORMAL")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model Attendance {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  user       User     @relation("AttendanceUser", fields: [userId], references: [id])
+  date       DateTime @default(now())
+  status     String   @default("PRESENT")
+  notes      String?
+  markedById Int
+  markedBy   User     @relation("AttendanceMarker", fields: [markedById], references: [id])
+  createdAt  DateTime @default(now())
+}
