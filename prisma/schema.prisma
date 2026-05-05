@@ -25,6 +25,7 @@ model User {
   password         String
   role             Role         @default(EMPLOYEE)
   pushToken        String?
+  salary           Float?
   createdAt        DateTime     @default(now())
   products         Product[]
   animals          Animal[]
@@ -187,6 +188,7 @@ model Inventory {
   costPerUnit Float
   supplier    String?
   note        String?
+  expiryDate  DateTime?
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
   logs        InventoryLog[]

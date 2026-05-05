@@ -2,7 +2,7 @@ const prisma = require('../utils/prisma')
 
 const addItem = async (req, res) => {
   try {
-    const { name, category, unit, quantity, minQuantity, costPerUnit, supplier, note } = req.body
+    const { name, category, unit, quantity, minQuantity, costPerUnit, supplier, note, expiryDate } = req.body
     if (!name || !category || !unit || !quantity || !minQuantity || !costPerUnit) {
       return res.status(400).json({ message: 'All required fields must be filled' })
     }
@@ -15,7 +15,8 @@ const addItem = async (req, res) => {
         minQuantity: parseFloat(minQuantity),
         costPerUnit: parseFloat(costPerUnit),
         supplier,
-        note
+        note,
+        expiryDate: expiryDate ? new Date(expiryDate) : null,
       }
     })
     await prisma.inventoryLog.create({

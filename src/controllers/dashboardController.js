@@ -2,6 +2,10 @@ const prisma = require('../utils/prisma')
 
 const getDashboard = async (req, res) => {
   try {
+    const now = new Date()
+    const in14Days = new Date(now); in14Days.setDate(in14Days.getDate() + 14)
+    const in30Days = new Date(now); in30Days.setDate(in30Days.getDate() + 30)
+
     const [
       totalProducts,
       availableProducts,
@@ -12,7 +16,9 @@ const getDashboard = async (req, res) => {
       categories,
       recentOrders,
       allProducts,
-      completedOrdersData
+      completedOrdersData,
+      upcomingHealthAlerts,
+      expiringInventory,
     ] = await Promise.all([
       prisma.product.count(),
       prisma.product.count({ where: { isAvailable: true } }),
@@ -38,7 +44,18 @@ const getDashboard = async (req, res) => {
       prisma.order.findMany({
         where: { status: 'COMPLETED' },
         select: { totalPrice: true, paidAmount: true }
-      })
+      }),
+      prisma.healthRecord.findMany({
+        where: { nextDueDate: { gte: now, lte: in14Days } },
+        include: { animal: { select: { name: true, type: true } } },
+        orderBy: { nextDueDate: 'asc' },
+        take: 10,
+      }),
+      prisma.inventory.findMany({
+        where: { expiryDate: { gte: now, lte: in30Days } },
+        orderBy: { expiryDate: 'asc' },
+        take: 10,
+      }),
     ])
 
     const totalInventoryValue = allProducts.reduce((sum, p) => sum + (p.price * p.stock), 0)
@@ -61,7 +78,9 @@ const getDashboard = async (req, res) => {
         categories
       },
       recentOrders,
-      lowStockProducts
+      lowStockProducts,
+      upcomingHealthAlerts,
+      expiringInventory,
     })
   } catch (error) {
     res.status(500).json({ message: 'Something went wrong' })

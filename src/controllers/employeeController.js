@@ -30,14 +30,15 @@ const addEmployee = async (req, res) => {
       return res.status(400).json({ message: 'This phone number is already registered' })
     }
 
+    const { salary } = req.body
     const hashedPassword = await bcrypt.hash(password, 10)
     const employee = await prisma.user.create({
-      data: { name, phone, password: hashedPassword, role: allowedRole }
+      data: { name, phone, password: hashedPassword, role: allowedRole, salary: salary ? parseFloat(salary) : null }
     })
 
     res.status(201).json({
       message: 'Employee added successfully!',
-      employee: { id: employee.id, name: employee.name, phone: employee.phone, role: employee.role, createdAt: employee.createdAt }
+      employee: { id: employee.id, name: employee.name, phone: employee.phone, role: employee.role, salary: employee.salary, createdAt: employee.createdAt }
     })
 
   } catch (error) {
@@ -61,6 +62,7 @@ const getAllEmployees = async (req, res) => {
         name: true,
         phone: true,
         role: true,
+        salary: true,
         createdAt: true
       },
       orderBy: { createdAt: 'desc' }
@@ -88,20 +90,22 @@ const updateEmployee = async (req, res) => {
     }
 
     const { id } = req.params
-    const { name, phone, role } = req.body
+    const { name, phone, role, salary } = req.body
 
     const employee = await prisma.user.update({
       where: { id: parseInt(id) },
       data: {
         ...(name && { name }),
         ...(phone && { phone }),
-        ...(role && { role })
+        ...(role && { role }),
+        ...(salary !== undefined && { salary: salary !== '' ? parseFloat(salary) : null }),
       },
       select: {
         id: true,
         name: true,
         phone: true,
-        role: true
+        role: true,
+        salary: true,
       }
     })
 
