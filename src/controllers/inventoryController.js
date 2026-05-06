@@ -78,6 +78,11 @@ const updateStock = async (req, res) => {
       }
     })
     const isLowStock = newQuantity <= item.minQuantity
+    if (isLowStock) {
+      const { sendPush } = require('../utils/push')
+      const owners = await prisma.user.findMany({ where: { role: { in: ['OWNER', 'MANAGER'] }, pushToken: { not: null } } })
+      owners.forEach(u => sendPush(u.pushToken, '⚠️ Low Stock Alert', `${item.name} is low — only ${newQuantity} ${item.unit} remaining`))
+    }
     res.json({
       message: 'Stock updated!',
       item: updated,
