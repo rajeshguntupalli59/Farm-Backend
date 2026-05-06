@@ -24,6 +24,9 @@ const attendanceRoutes = require('./routes/attendance')
 const reportRoutes = require('./routes/reports')
 const deliveryPartnerRoutes = require('./routes/deliveryPartners')
 const shipmentRoutes = require('./routes/shipments')
+const settingsRoutes = require('./routes/settings')
+const reviewRoutes = require('./routes/reviews')
+const bookingRoutes = require('./routes/bookings')
 
 const { startDailySummaryCron } = require('./utils/dailySummary')
 
@@ -104,6 +107,9 @@ app.use('/api/attendance', attendanceRoutes)
 app.use('/api/reports', reportRoutes)
 app.use('/api/delivery/partners', deliveryPartnerRoutes)
 app.use('/api/delivery/shipments', shipmentRoutes)
+app.use('/api/settings', settingsRoutes)
+app.use('/api/reviews', reviewRoutes)
+app.use('/api/bookings', bookingRoutes)
 
 app.get('/', (req, res) => {
   res.json({ message: 'Kruthik Farm API is running! 🐐' })

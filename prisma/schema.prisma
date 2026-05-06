@@ -7,6 +7,12 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
 model OtpCode {
   id        Int      @id @default(autoincrement())
   phone     String
@@ -79,6 +85,7 @@ model Product {
   userId      Int
   stockLogs   ProductLog[]
   orders      Order[]
+  reviews     Review[]
 }
 
 model ProductLog {
@@ -92,13 +99,15 @@ model ProductLog {
 }
 
 model Customer {
-  id        Int      @id @default(autoincrement())
-  name      String
-  phone     String   @unique
-  address   String?
-  pushToken String?
-  createdAt DateTime @default(now())
-  orders    Order[]
+  id             Int             @id @default(autoincrement())
+  name           String
+  phone          String          @unique
+  address        String?
+  pushToken      String?
+  createdAt      DateTime        @default(now())
+  orders         Order[]
+  reviews        Review[]
+  animalBookings AnimalBooking[]
 }
 
 model Order {
@@ -242,6 +251,7 @@ model Animal {
   healthRecords   HealthRecord[]
   weightLogs      WeightLog[]
   breedingRecords BreedingRecord[]
+  bookings        AnimalBooking[]
 }
 
 model AnimalStockLog {
@@ -331,4 +341,31 @@ model Attendance {
   markedById Int
   markedBy   User     @relation("AttendanceMarker", fields: [markedById], references: [id])
   createdAt  DateTime @default(now())
+}
+
+model Review {
+  id         Int      @id @default(autoincrement())
+  customerId Int
+  customer   Customer @relation(fields: [customerId], references: [id])
+  productId  Int
+  product    Product  @relation(fields: [productId], references: [id])
+  rating     Int      // 1-5
+  comment    String?
+  isVisible  Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  @@unique([customerId, productId])
+}
+
+model AnimalBooking {
+  id            Int      @id @default(autoincrement())
+  customerId    Int
+  customer      Customer @relation(fields: [customerId], references: [id])
+  animalId      Int
+  animal        Animal   @relation(fields: [animalId], references: [id])
+  eventDate     DateTime
+  depositAmount Float    @default(0)
+  paidDeposit   Float    @default(0)
+  status        String   @default("PENDING")
+  notes         String?
+  createdAt     DateTime @default(now())
 }
